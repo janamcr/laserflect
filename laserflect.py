@@ -48,20 +48,7 @@ def bg_and_walls():
     pygame.draw.rect(window, BLUE, bluerect)
     pygame.draw.rect(window, RED, redrect)
 
-# robot starting position and direction
 
-robotx = 3
-roboty = 3
-robotydir = 1
-
-# laser start values
-
-laserx = robotx
-lasery = roboty
-laserxdir = 1
-laserydir = 0
-lasercolour = PURPLE
-laser_exists = False
 
 
 # class for all game objects with location
@@ -118,7 +105,7 @@ class Robot (GameObject):
         
     def draw (self):
         
-        robotrect = pygame.Rect((self.x * 32, self.y * 32),(32,32))
+        robotrect = pygame.Rect((self.location() [0], self.location() [1]),(32,32))
         pygame.draw.rect (window, GREY, robotrect)
 
     def update_down (self):
@@ -129,14 +116,7 @@ class Robot (GameObject):
 
         self.y += -1
 
-    def make_laser(self):
-
-        laserrect = pygame.Rect((self.x * 32, self.y * 32),(8,8))
-        pygame.draw.rect (window, PURPLE, laserrect)
-
-
-        
-
+     
 
 
 # class for all lasers
@@ -148,18 +128,19 @@ class Laser (GameObject):
         
         
     def draw (self):
-        
-        laserrect = pygame.Rect((self.x * 32, self.y * 32),(8,8))
+     
+        laserrect = pygame.Rect((self.location() [0] + 12, self.location() [1] +12),(8,8))
         pygame.draw.rect (window, PURPLE, laserrect)
 
+        
     def update_left (self):
-
-        self.x += 1
-
-    def update_right (self):
 
         self.x += -1
 
+    def update_right (self):
+
+        self.x += 1
+    
    
 
 
@@ -176,12 +157,18 @@ mirrorlist.append (Mirror (9, 6, "trbl"))
 
 robotlist = []
 
-robotlist.append (Robot (3, 3, 'down'))
+robotlist.append (Robot (3, 6, 'down'))
 robotlist.append (Robot (7, 3, 'up'))
 
 
+# Create lasers
+
+laserlist = []
+
 for robot in robotlist:
-    robot.make_laser()
+    laserlist.append (Laser (robot.x, robot.y))
+
+laser_exists = True
 
 # filter start values
 
@@ -208,8 +195,6 @@ while True:
     for mirror in mirrorlist:
         mirror.draw()
    
-               
-        
 
     # draw filter
     filterrect = pygame.Rect (position(filter1x, filter1y),(16,16))
@@ -218,6 +203,7 @@ while True:
     
     # draw and move robot
 
+    
     for robot in robotlist:
 
         if robot.direction == "down":
@@ -234,10 +220,22 @@ while True:
         elif robot.y < 2:
             robot.direction = "down"
        
-        
+    # draw and move laser
 
-        
-    # check if laser left screen
+    for laser in laserlist:
+
+        #while laser_exists == True:
+
+            laser.update_right()
+            for laser in draw_lasers:
+                laser.draw()
+
+            #if laser.x > 18:
+             #   laser_exists == False
+            
+
+
+
     #if laserx >19:
      #   laser_exists = False
       #  if lasercolour == YELLOW:
@@ -268,30 +266,30 @@ while True:
 
         
     
-    # draw laser
-    laserrect = pygame.Rect (position (laserx,lasery),(8,8))
-    pygame.draw.rect (window, lasercolour, laserrect)
+#    # draw laser
+ #   laserrect = pygame.Rect (position (laserx,lasery),(8,8))
+  #  pygame.draw.rect (window, lasercolour, laserrect)
 
     # move laser
-    laserx += laserxdir
-    lasery += laserydir
+   # laserx += laserxdir
+    #lasery += laserydir
 
     # check for filter
-    if laserx == filter1x and lasery == filter1y:
-        lasercolour = filter1colour
+   # if laserx == filter1x and lasery == filter1y:
+    #       lasercolour = filter1colour
         
     # check for mirror
     
-    for mirror in mirrorlist:
+    #for mirror in mirrorlist:
 
-        if laserx == mirror.x and lasery == mirror.y:
+     #   if laserx == mirror.x and lasery == mirror.y:
 
-            if mirror.orient == "tlbr":
-                laserxdir = 0
-                laserydir = 1
-            elif mirror.orient == "trbl":
-                laserxdir = 0
-                laserydir = -1
+      #      if mirror.orient == "tlbr":
+       #         laserxdir = 0
+        #        laserydir = 1
+         #   elif mirror.orient == "trbl":
+          #      laserxdir = 0
+           #     laserydir = -1
     
 
     # print score
