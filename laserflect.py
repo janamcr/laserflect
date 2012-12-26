@@ -31,24 +31,7 @@ PURPLE = (204,0,102)
 # positions
 
 def position(gridx, gridy):
-    return (gridx * 32), (gridy * 32)
-
-# draw the background and walls
-
-def bg_and_walls():
-    window.fill(BLACK)
-
-    yellowrect = pygame.Rect (position(19,0),(32,640))
-    greenrect = pygame.Rect (position(0,0),(32,640))
-    bluerect = pygame.Rect (position(0,14),(640,32))
-    redrect = pygame.Rect (position(0,0),(640,32))
-
-    pygame.draw.rect(window, YELLOW, yellowrect)
-    pygame.draw.rect(window, GREEN, greenrect)
-    pygame.draw.rect(window, BLUE, bluerect)
-    pygame.draw.rect(window, RED, redrect)
-
-
+   return (gridx * 32), (gridy * 32)
 
 
 # class for all game objects with location
@@ -59,8 +42,46 @@ class GameObject:
         self.y = inputy
 
     def location (self):
-        return (self.x * 32 + 16), (self.y * 32 + 16)
+        return (self.x * 32), (self.y * 32)
+
+# class for all walls
+
+class Walls (GameObject):
+
+    def __init__(self, inputx, inputy, direction, colour):
+        GameObject.__init__(self, inputx, inputy)
+        self.direction = direction
+        self.colour = colour
+        self.wall_here = []
+        n=0
+
+        if self.direction == "horizontal":
+           while n<19:
+              self.wall_here.append ((self.x + n,self.y))
+              n +=1
+           
+        if self.direction == "vertical":
+           while n<12:
+              self.wall_here.append ((self.x ,self.y + n))
+              n +=1
+                                     
+    def draw (self):
+
+        if self.direction == "horizontal":
+
+            wallrect = pygame.Rect((self.location() [0], self.location() [1]),(576,32))
+            pygame.draw.rect (window, self.colour, wallrect)
+
         
+        if self.direction == "vertical":
+
+            wallrect = pygame.Rect((self.location() [0] , self.location() [1]),(32,416))
+            pygame.draw.rect (window, self.colour, wallrect)
+
+    
+        
+
+
 
 # class for all mirrors 
 
@@ -89,9 +110,7 @@ class Mirror (GameObject):
                             
     
     def draw(self):
-        pygame.draw.line(window, WHITE,
-                            self.point_start()
-                            ,self.point_end())
+        pygame.draw.line(window, WHITE, self.point_start(),self.point_end())
 
 
 # class for all robots
@@ -123,14 +142,16 @@ class Robot (GameObject):
 
 class Laser (GameObject):
     
-    def __init__(self, inputx, inputy):
+    def __init__(self, inputx, inputy, colour):
         GameObject.__init__(self, inputx, inputy)
+        self.laser_exists = True
+        self.colour = colour
         
         
     def draw (self):
      
-        laserrect = pygame.Rect((self.location() [0] + 12, self.location() [1] +12),(8,8))
-        pygame.draw.rect (window, PURPLE, laserrect)
+        laserrect = pygame.Rect((self.location() [0] + 24, self.location() [1]),(8,8))
+        pygame.draw.rect (window, self.colour, laserrect)
 
         
     def update_left (self):
@@ -139,11 +160,20 @@ class Laser (GameObject):
 
     def update_right (self):
 
-        self.x += 1
+        self.x += 3
     
-   
+
+# create walls and remember where walls are
+
+wall_list = []
+
+wall_list.append (Walls(1,0,"horizontal",RED))
+wall_list.append (Walls(1,14,"horizontal",GREEN))
+wall_list.append (Walls(0,1,"vertical",BLUE))
+wall_list.append (Walls(16,1,"vertical",YELLOW))
 
 
+    
 # Create mirrors
 
 mirrorlist = []
@@ -166,9 +196,9 @@ robotlist.append (Robot (7, 3, 'up'))
 laserlist = []
 
 for robot in robotlist:
-    laserlist.append (Laser (robot.x, robot.y))
+    laserlist.append (Laser (robot.x, robot.y, PURPLE))
 
-laser_exists = True
+
 
 # filter start values
 
@@ -182,13 +212,17 @@ pygame.display.update()
 # game loop
 
 while True:
-    dt = clock.tick(10)
+    dt = clock.tick(2)
 
     timer += dt
     time = math.floor(timer/1000)
 
-    # draw backgrounds
-    bg_and_walls()
+    # draw background and walls
+    
+    window.fill(BLACK)
+
+    for wall in wall_list:
+        wall.draw()
 
     # draw mirrors     
 
@@ -222,37 +256,27 @@ while True:
        
     # draw and move laser
 
-    for laser in laserlist:
-
-        #while laser_exists == True:
-
-            laser.update_right()
-            for laser in draw_lasers:
-                laser.draw()
-
-            #if laser.x > 18:
-             #   laser_exists == False
+        for laser in laserlist:
             
+            if laser.laser_exists == True:
+
+               laser.draw()
+               laser.update_right()
+
+
+               # check if laser hits wall, if so, remove from screen
+               # check if laser colour matches wall colour, adapt score
+               
+               for wall in wall_list:
+                   if (laser.x,laser.y) in wall.wall_here:
+                       laser.laser_exists = False
+                           if laser.colour == wall.colour:
+                               score +=1
 
 
 
-    #if laserx >19:
-     #   laser_exists = False
-      #  if lasercolour == YELLOW:
-       #     score += 1
-    #if lasery > 14:
-     #   laser_exists = False
-      #  if lasercolour == BLUE:
-       #     score += 1
-    #if lasery < 1:
-     #   laser_exists = False
-      #  if lasercolour == RED:
-       #     score += 1
-    #if laserx < 1:
-     #   laser_exists = False
-      #  if lasercolour == GREEN:
-       #     score += 1
 
+    
     # create new laser if not there    
     #if laser_exists == False:
      #   laser_exists = True
@@ -264,15 +288,6 @@ while True:
 
 
 
-        
-    
-#    # draw laser
- #   laserrect = pygame.Rect (position (laserx,lasery),(8,8))
-  #  pygame.draw.rect (window, lasercolour, laserrect)
-
-    # move laser
-   # laserx += laserxdir
-    #lasery += laserydir
 
     # check for filter
    # if laserx == filter1x and lasery == filter1y:
