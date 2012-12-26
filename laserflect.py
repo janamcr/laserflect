@@ -1,5 +1,6 @@
-import pygame, sys, math, os
+import pygame, sys, math, os, random
 from pygame.locals import *
+
 
 # set up pygame
 pygame.init()
@@ -55,13 +56,15 @@ class Wall (GameObject):
         self.wall_here = []
         n=0
 
+        # these grids are wall
+
         if self.direction == "horizontal":
-           while n<19:
+           while n<=19:
               self.wall_here.append ((self.x + n,self.y))
               n +=1
            
         if self.direction == "vertical":
-           while n<12:
+           while n<=12:
               self.wall_here.append ((self.x ,self.y + n))
               n +=1
                                      
@@ -95,18 +98,18 @@ class Mirror (GameObject):
 
     def point_start(self):
         if self.orient == "tlbr":
-            return self.location()[0] - 16, self.location()[1] - 16
+            return self.location()[0], self.location()[1]
 
         elif self.orient == "trbl":
-            return self.location()[0] + 16, self.location()[1] - 16
+            return self.location()[0] + 32, self.location()[1]
 
 
     def point_end(self):
         if self.orient == "tlbr":
-            return self.location()[0] + 16, self.location()[1] + 16
+            return self.location()[0] + 32, self.location()[1] + 32
 
         elif self.orient == "trbl":
-            return self.location()[0] - 16, self.location()[1] + 16        
+            return self.location()[0], self.location()[1] + 32        
                             
     
     def draw(self):
@@ -142,25 +145,35 @@ class Robot (GameObject):
 
 class Laser (GameObject):
     
-    def __init__(self, inputx, inputy, colour):
+    def __init__(self, inputx, inputy, inputdirection, colour):
         GameObject.__init__(self, inputx, inputy)
         self.laser_exists = True
+        self.direction = inputdirection
         self.colour = colour
-        
+         
         
     def draw (self):
      
-        laserrect = pygame.Rect((self.location() [0] + 24, self.location() [1]),(8,8))
+        laserrect = pygame.Rect((self.location() [0] +12, self.location() [1] +12),(8,8))
         pygame.draw.rect (window, self.colour, laserrect)
 
         
-    def update_left (self):
+    def update(self):
 
-        self.x += -1
+        self.x += self.direction [0]
+        self.y += self.direction [1]
 
-    def update_right (self):
 
-        self.x += 1
+    def update_dir (self, mirror_orient):
+
+      if mirror_orient == "tlbr":
+         self.direction = (self.direction[1], self.direction [0])   
+                     
+      elif mirror.orient == "trbl":
+         self.direction = (self.direction[1] *-1, self.direction [0] *-1)
+       
+
+
     
 
 # create walls and remember where walls are
@@ -196,7 +209,7 @@ robotlist.append (Robot (7, 3, 'up'))
 laserlist = []
 
 for robot in robotlist:
-    laserlist.append (Laser (robot.x, robot.y, PURPLE))
+    laserlist.append (Laser (robot.x, robot.y, (1,0), PURPLE))
 
 
 
@@ -257,13 +270,18 @@ while True:
     # draw and move laser
 
     for laser in laserlist:
-            
+          
+         if laser.laser_exists == False:
+            robot_shoot = random.randint(0, len(robotlist)-1)
+            laser.x = robotlist[robot_shoot].x
+            laser.y = robotlist[robot_shoot].y
+            laser.direction = (1,0)
+            laser.laser_exists = True
+
          if laser.laser_exists == True:
 
-            laser.draw()
-            laser.update_right()
-               
-
+            
+            
 
          # check if laser hits wall, if so, remove from screen
          # check if laser colour matches wall colour, adapt score
@@ -274,6 +292,21 @@ while True:
 
                      if laser.colour == wall.colour:
                         score +=1
+
+          # check for mirror             
+
+            for mirror in mirrorlist:
+               
+
+               if laser.x == mirror.x and laser.y == mirror.y:
+                  laser.update_dir (mirror.orient)
+
+            
+            laser.update()
+            laser.draw()
+
+                  
+    
 
 
 
@@ -297,16 +330,6 @@ while True:
         
     # check for mirror
     
-    #for mirror in mirrorlist:
-
-     #   if laserx == mirror.x and lasery == mirror.y:
-
-      #      if mirror.orient == "tlbr":
-       #         laserxdir = 0
-        #        laserydir = 1
-         #   elif mirror.orient == "trbl":
-          #      laserxdir = 0
-           #     laserydir = -1
     
 
     # print score
