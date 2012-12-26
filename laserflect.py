@@ -46,7 +46,7 @@ class GameObject:
 
 # class for all walls
 
-class Walls (GameObject):
+class Wall (GameObject):
 
     def __init__(self, inputx, inputy, direction, colour):
         GameObject.__init__(self, inputx, inputy)
@@ -160,17 +160,17 @@ class Laser (GameObject):
 
     def update_right (self):
 
-        self.x += 3
+        self.x += 1
     
 
 # create walls and remember where walls are
 
 wall_list = []
 
-wall_list.append (Walls(1,0,"horizontal",RED))
-wall_list.append (Walls(1,14,"horizontal",GREEN))
-wall_list.append (Walls(0,1,"vertical",BLUE))
-wall_list.append (Walls(16,1,"vertical",YELLOW))
+wall_list.append (Wall(1,0,"horizontal",RED))
+wall_list.append (Wall(1,14,"horizontal",GREEN))
+wall_list.append (Wall(0,1,"vertical",BLUE))
+wall_list.append (Wall(19,1,"vertical",YELLOW))
 
 
     
@@ -212,7 +212,7 @@ pygame.display.update()
 # game loop
 
 while True:
-    dt = clock.tick(2)
+    dt = clock.tick(5)
 
     timer += dt
     time = math.floor(timer/1000)
@@ -256,22 +256,24 @@ while True:
        
     # draw and move laser
 
-        for laser in laserlist:
+    for laser in laserlist:
             
-            if laser.laser_exists == True:
+         if laser.laser_exists == True:
 
-               laser.draw()
-               laser.update_right()
-
-
-               # check if laser hits wall, if so, remove from screen
-               # check if laser colour matches wall colour, adapt score
+            laser.draw()
+            laser.update_right()
                
-               for wall in wall_list:
-                   if (laser.x,laser.y) in wall.wall_here:
-                       laser.laser_exists = False
-                           if laser.colour == wall.colour:
-                               score +=1
+
+
+         # check if laser hits wall, if so, remove from screen
+         # check if laser colour matches wall colour, adapt score
+               
+            for wall in wall_list:
+               if (laser.x,laser.y) in wall.wall_here:
+                     laser.laser_exists = False
+
+                     if laser.colour == wall.colour:
+                        score +=1
 
 
 
