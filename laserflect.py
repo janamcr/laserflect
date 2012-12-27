@@ -15,6 +15,7 @@ pygame.display.set_caption('Lasers')
 # time
 clock = pygame.time.Clock()
 timer = 60000 #global time
+time_move = 0
 
 # score
 score = 0
@@ -126,65 +127,30 @@ class Filter (GameObject):
 # class for all robots
 
 class SuperRobot(pygame.sprite.Sprite):
-    def __init__(self, initial_position, initial_direction):
+    def __init__(self, position, direction, path):
        pygame.sprite.Sprite.__init__(self)
 
        self.image = pygame.image.load("robothead.png")
 
        self.rect = self.image.get_rect()
-       self.rect.topleft = [initial_position[0]*32, initial_position[1] *32]
+       self.rect.topleft = [position[0]*32, position[1] *32]
 
-       self.position = initial_position
+       self.position = position
+       self.direction = direction
+       self.path = path
 
-       if initial_direction == "down":
-          self.going_down = True
-       elif initial_direction == "up":
-          self.going_down = False
 
-    def update(self,top, bottom):
-
-       if self.rect.bottom == bottom:
-          self.going_down = False
-       elif self.rect.top == top:
-          self.going_down = True
-
-       if self.going_down:
-          self.rect.top += 32
-          self.position[1] += 1
-
-       else:
-          self.rect.top -= 32
-          self.position[1] -= 1
-
+    def update(self):
        
+       if self.position == self.path[0] or self.position == self.path[1]:
+          self.direction[0] = self.direction[0] *-1
+          self.direction[1] = self.direction[1] *-1
+      
+       self.position [0] += self.direction[0]
+       self.position [1] += self.direction[1]
 
-       
-   
+       self.rect.topleft = [self.position[0]*32, self.position[1] *32]
 
-# class for all robots
-
-class Robot(GameObject):
-    
-    def __init__(self, inputx, inputy, startdirection):
-        GameObject.__init__(self, inputx, inputy)
-        self.direction = startdirection
-
-        
-    def draw (self):
-        
-        robotrect = pygame.Rect((self.location() [0], self.location() [1]),(32,32))
-        pygame.draw.rect (window, GREY, robotrect)
-
-    def update_down (self):
-
-        self.y += 1
-
-    def update_up (self):
-
-        self.y += -1
-
-
-     
 
 
 # class for all lasers
@@ -240,6 +206,8 @@ mirrorlist = []
 mirrorlist.append (Mirror (8, 7, "tlbr"))
 mirrorlist.append (Mirror (12, 11, "tlbr"))
 mirrorlist.append (Mirror (9, 6, "trbl"))
+mirrorlist.append (Mirror (17, 2, "tlbr"))
+mirrorlist.append (Mirror (17, 5, "trbl"))
 
 
 # Create filter
@@ -250,8 +218,8 @@ game_filter = Filter(8, 4, YELLOW)
 
 robotlist = []
 
-robotlist.append (SuperRobot ([3, 6], "down"))
-robotlist.append (SuperRobot ([2,3], "up"))                      
+robotlist.append (SuperRobot ([3, 6],[0,-1], [[3,1],[3,13]]))
+robotlist.append (SuperRobot ([2,12], [1,0], [[1,12],[18,12]]))                      
 
 
 # Create lasers
@@ -269,9 +237,10 @@ pygame.display.update()
 # game loop
 
 while True:
-    dt = clock.tick(10)
+    dt = clock.tick(60)
 
     timer -= dt
+    time_move += dt
     
     # draw background and walls
     
@@ -291,61 +260,65 @@ while True:
     game_filter.draw()
    
     
-    
-    # draw and move robot
+    if time_move >= 250:
 
-    
-    for robot in robotlist:
-       robot.update(32,448)
-       window.blit(robot.image, robot.rect)
+       time_move -=250
+       # draw and move robot
+
        
-        
-       
-    # draw and move laser
+       for robot in robotlist:
+          robot.update()
+          
+          
+           
+          
+       # draw and move laser
+
+       for laser in laserlist:
+             
+            if laser.laser_exists == False:
+               robot_shoot = random.randint(0, len(robotlist)-1)
+               laser.x = robotlist[robot_shoot].position[0]
+               laser.y = robotlist[robot_shoot].position[1]
+               laser.direction = (1,0)
+               laser.colour = PURPLE
+               laser.laser_exists = True
+
+            if laser.laser_exists == True:
+
+               laser.update()
+               
+
+            # check if laser hits wall, if so, remove from screen
+            # check if laser colour matches wall colour, adapt score
+                  
+               for wall in wall_list:
+                  if (laser.x,laser.y) in wall.wall_here:
+                        laser.laser_exists = False
+
+                        if laser.colour == wall.colour:
+                           score +=1
+
+             # check for mirror             
+
+               for mirror in mirrorlist:
+                  
+
+                  if laser.x == mirror.x and laser.y == mirror.y:
+                     laser.update_dir (mirror.orient)
+
+             
+    for robot in robotlist:   
+        window.blit(robot.image, robot.rect)
 
     for laser in laserlist:
-          
-         if laser.laser_exists == False:
-            robot_shoot = random.randint(0, len(robotlist)-1)
-            laser.x = robotlist[robot_shoot].position[0]
-            laser.y = robotlist[robot_shoot].position[1]
-            laser.direction = (1,0)
-            laser.colour = PURPLE
-            laser.laser_exists = True
+       # check for filter
 
-         if laser.laser_exists == True:
+        if laser.x == game_filter.x and laser.y == game_filter.y:
+            laser.colour = game_filter.colour
 
-            laser.update()
-            
+        laser.draw()
 
-         # check if laser hits wall, if so, remove from screen
-         # check if laser colour matches wall colour, adapt score
-               
-            for wall in wall_list:
-               if (laser.x,laser.y) in wall.wall_here:
-                     laser.laser_exists = False
-
-                     if laser.colour == wall.colour:
-                        score +=1
-
-          # check for mirror             
-
-            for mirror in mirrorlist:
-               
-
-               if laser.x == mirror.x and laser.y == mirror.y:
-                  laser.update_dir (mirror.orient)
-
-          # check for filter
-
-            if laser.x == game_filter.x and laser.y == game_filter.y:
-               laser.colour = game_filter.colour
-    
-            
-            laser.draw()
-    
-    
-    
 
     # print score
     text2 = font.render("Score: " + str(score), 1, BLACK)
@@ -368,9 +341,9 @@ while True:
           if event.key == K_LEFT: game_filter.x -= 1
           if event.key == K_UP: game_filter.y -= 1
           if event.key == K_DOWN:  game_filter.y += 1
-          if event.key == K_y:  game_filter.colour = YELLOW
-          if event.key == K_r:  game_filter.colour = RED
-          if event.key == K_g:  game_filter.colour = GREEN
-          if event.key == K_b:  game_filter.colour = BLUE
+          if event.key == K_1:  game_filter.colour = YELLOW
+          if event.key == K_2:  game_filter.colour = RED
+          if event.key == K_3:  game_filter.colour = GREEN
+          if event.key == K_4:  game_filter.colour = BLUE
   
     pygame.display.flip()
