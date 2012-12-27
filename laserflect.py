@@ -29,11 +29,6 @@ YELLOW = (250, 255, 106)
 GREY = (100,100,100)
 PURPLE = (204,0,102)
 
-# positions
-
-def position(gridx, gridy):
-   return (gridx * 32), (gridy * 32)
-
 
 # class for all game objects with location
 
@@ -130,7 +125,45 @@ class Filter (GameObject):
 
 # class for all robots
 
-class Robot (GameObject):
+class SuperRobot(pygame.sprite.Sprite):
+    def __init__(self, initial_position, initial_direction):
+       pygame.sprite.Sprite.__init__(self)
+
+       self.image = pygame.image.load("robothead.png")
+
+       self.rect = self.image.get_rect()
+       self.rect.topleft = [initial_position[0]*32, initial_position[1] *32]
+
+       self.position = initial_position
+
+       if initial_direction == "down":
+          self.going_down = True
+       elif initial_direction == "up":
+          self.going_down = False
+
+    def update(self,top, bottom):
+
+       if self.rect.bottom == bottom:
+          self.going_down = False
+       elif self.rect.top == top:
+          self.going_down = True
+
+       if self.going_down:
+          self.rect.top += 32
+          self.position[1] += 1
+
+       else:
+          self.rect.top -= 32
+          self.position[1] -= 1
+
+       
+
+       
+   
+
+# class for all robots
+
+class Robot(GameObject):
     
     def __init__(self, inputx, inputy, startdirection):
         GameObject.__init__(self, inputx, inputy)
@@ -149,6 +182,7 @@ class Robot (GameObject):
     def update_up (self):
 
         self.y += -1
+
 
      
 
@@ -216,8 +250,8 @@ game_filter = Filter(8, 4, YELLOW)
 
 robotlist = []
 
-robotlist.append (Robot (3, 6, 'down'))
-robotlist.append (Robot (2, 3, 'up'))
+robotlist.append (SuperRobot ([3, 6], "down"))
+robotlist.append (SuperRobot ([2,3], "up"))                      
 
 
 # Create lasers
@@ -225,7 +259,7 @@ robotlist.append (Robot (2, 3, 'up'))
 laserlist = []
 
 for robot in robotlist:
-    laserlist.append (Laser (robot.x, robot.y, (1,0), PURPLE))
+    laserlist.append (Laser (robot.position[0], robot.position[1], (1,0), PURPLE))
 
 
 
@@ -235,7 +269,7 @@ pygame.display.update()
 # game loop
 
 while True:
-    dt = clock.tick(30)
+    dt = clock.tick(10)
 
     timer -= dt
     
@@ -243,6 +277,7 @@ while True:
     
     window.fill(BLACK)
 
+   
     for wall in wall_list:
         wall.draw()
 
@@ -261,20 +296,10 @@ while True:
 
     
     for robot in robotlist:
-
-        if robot.direction == "down":
-            robot.update_down()
-            robot.draw()
-
-        elif robot.direction == "up":
-            robot.update_up()
-            robot.draw()
-
-        if robot.y > 12:
-            robot.direction = "up"
-
-        elif robot.y < 2:
-            robot.direction = "down"
+       robot.update(32,448)
+       window.blit(robot.image, robot.rect)
+       
+        
        
     # draw and move laser
 
@@ -282,8 +307,8 @@ while True:
           
          if laser.laser_exists == False:
             robot_shoot = random.randint(0, len(robotlist)-1)
-            laser.x = robotlist[robot_shoot].x
-            laser.y = robotlist[robot_shoot].y
+            laser.x = robotlist[robot_shoot].position[0]
+            laser.y = robotlist[robot_shoot].position[1]
             laser.direction = (1,0)
             laser.colour = PURPLE
             laser.laser_exists = True
